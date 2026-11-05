@@ -30,3 +30,14 @@ dan informasi apa yang dibutuhkan untuk mengatasinya.
 ## 4. Pembagian kerja
 
 Siapa mengerjakan apa, dan bagaimana kalian memastikan keduanya memahami seluruh kode.
+
+### Anggota 1 — Muhammad Iqbal (251524057)
+
+| Lingkup | AI (OpenCode) | Muhammad Iqbal |
+| --- | --- | --- |
+| TODO(T1) `INSERT ... SELECT` | Mengimplementasikan perubahan di `crud/parser.py::Parser._insert()` (memakai ulang `_select()` dan mengisi `Insert.query`), menambahkan test regresi/kasus tepi di `tests/test_tambahan.py`, serta menjalankan `pytest`. | Menentukan target TODO(T1), meninjau diff dan kesesuaiannya dengan SPESIFIKASI.md bagian 3 dan 5, menjalankan test, dan memverifikasi CRUD matrix query contoh (`arsip_pesanan` = C, `pesanan` = R). |
+
+Pemahaman kode dipastikan dengan saling menjelaskan alur `parser._insert()` → `Insert.query`
+→ `analyzer`/`resolver`, lalu mengecek ulang lewat AST (`ast_nodes.pretty`) dan test yang
+gagal sebelum perbaikan.
+
