@@ -47,7 +47,11 @@ def _collect_select(sel: ast.Select, usage, op: str) -> None:
 
 
 def _collect(expr, usage, op: str) -> None:
-    """Menandai tabel di setiap subquery di dalam ekspresi dengan `op`."""
+    """Menandai tabel di setiap subquery di dalam ekspresi dengan `op`.
+
+    Membaca tabel lewat subquery selalu R, apa pun `op` statement luarannya
+    (SPESIFIKASI.md bagian 5).
+    """
     if expr is None:
         return
     if isinstance(expr, ast.BinaryOp):
@@ -60,7 +64,7 @@ def _collect(expr, usage, op: str) -> None:
         for value in expr.values or []:
             _collect(value, usage, op)
         if expr.query is not None:
-            _collect_select(expr.query, usage, op)
+            _collect_select(expr.query, usage, "R")
     elif isinstance(expr, ast.Between):
         _collect(expr.expr, usage, op)
         _collect(expr.low, usage, op)
@@ -68,7 +72,7 @@ def _collect(expr, usage, op: str) -> None:
     elif isinstance(expr, ast.IsNull):
         _collect(expr.expr, usage, op)
     elif isinstance(expr, (ast.Exists, ast.Subquery)):
-        _collect_select(expr.query, usage, op)
+        _collect_select(expr.query, usage, "R")
     elif isinstance(expr, ast.FunctionCall):
         for arg in expr.args:
             _collect(arg, usage, op)

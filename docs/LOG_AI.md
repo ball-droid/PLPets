@@ -6,6 +6,7 @@ Catat setiap penggunaan AI atau coding agent yang memengaruhi kode atau laporan.
 | --- | --- | --- | --- | --- | --- |
 | 1 | Muhammad Iqbal (251524057) — anggota 1 | Minta bantuan AI (MiMoCode) mengerjakan TODO(T1): dukung `INSERT INTO ... SELECT ...` sesuai SPESIFIKASI.md bagian 3 dan 5 | Diterima | Perubahan kecil dan terarah: `_insert()` memakai ulang `_select()` yang sudah ada, lalu mengisi `ast.Insert.query`; `values` tetap kosong. API publik dan aturan arsitektur tidak berubah. | `pytest -q` → 28 passed (sebelumnya 25 passed, 5 failed); AST `INSERT ... SELECT` dicek dengan `ast_nodes.pretty()`; `analyze_source()` menghasilkan `{'arsip_pesanan': 'C', 'pesanan': 'R'}` |
 | 2 | Muhammad Iqbal (251524057) — anggota 1 | Verifikasi status TODO(T1) bersama AI (MiMoCode): memastikan implementasi `INSERT ... SELECT` di `crud/parser.py` sudah selesai, menjalankan ulang test, memperbarui catatan log ini, lalu push ke branch `Muhammad-Iqbal` dan merge ke `main` | Diterima | Implementasi T1 sudah ada dan test khusus T1 lulus; sisa kegagalan test berasal dari bug lexer yang belum dikerjakan (T3), bukan dari T1. | `pytest -q` → 29 passed, 3 failed (semua gagal di lexer: `test_keyword_huruf_kecil`, `test_komentar_blok`, `test_matrix_laporan_penjualan`); `pytest tests/test_tambahan.py` → 2 passed |
+| 3 | Muhammad Iqbal (251524057) — anggota 1 | Minta bantuan AI (MiMoCode) mengerjakan TODO(T3) dan bug terkait: komentar blok `/* ... */` di `crud/lexer.py`, operator `<>` (maximal munch), keyword tidak peka huruf besar/kecil, serta perbaikan aturan subquery di `crud/analyzer.py` sesuai SPESIFIKASI.md bagian 2.2, 2.3, 2.5, dan 5 | Diterima | Ketiga perbaikan lexer persis mengikuti spesifikasi (komentar blok lintas baris yang tidak ditutup = `LexError`; `<>` satu token; nilai keyword selalu huruf besar). Perbaikan analyzer diperlukan karena membaca tabel lewat subquery harus selalu R, bukan ikut op statement luar (UPDATE menandai `pesanan` = U di test matrix). | `pytest -q` → **32 passed, 0 failed** (sebelumnya 29 passed, 3 failed); test matrix `laporan_penjualan.sql` kini menghasilkan `{'arsip_pesanan': 'C', 'pelanggan': 'RU', 'pesanan': 'RD'}` sesuai ekspektasi |
 
 ## Rincian pengerjaan TODO(T1) — `INSERT ... SELECT`
 
@@ -22,3 +23,18 @@ menyesatkan: setelah TODO(T1) selesai, `test_matrix_laporan_penjualan` masih gag
 penyebabnya bukan TODO(T1) melainkan bug lexer (`<>` dan keyword huruf kecil) yang belum
 dikerjakan. Karena itu hasil AI tidak boleh langsung dipercaya; verifikasi dilakukan dengan
 membaca spesifikasi dan menjalankan test, bukan hanya melihat kode terlihat benar.
+
+## Rincian pengerjaan TODO(T3) — komentar blok dan perbaikan lexer
+
+| Pihak | Yang dikerjakan |
+| --- | --- |
+| AI (MiMoCode) | Membaca SPESIFIKASI.md bagian 2.2, 2.3, 2.5, dan 5. Mengubah `crud/lexer.py`: (1) `/* ... */` dikonsumsi sampai penutup, boleh lintas baris, tidak ditutup → `LexError`; (2) cabang `<` menghasilkan `<>`/`<=`/`<` (maximal munch); (3) `_word()` membandingkan `text.upper()` terhadap `KEYWORDS` dan menyimpan nilai keyword dalam huruf besar. Memperbaiki `crud/analyzer.py::_collect` agar tabel di dalam subquery (`IN (SELECT ...)`, `EXISTS`, `Subquery`) selalu ditandai R, lalu menjalankan seluruh test. |
+| Muhammad Iqbal (251524057) — anggota 1 | Menentukan target TODO(T3) dan bug lexer yang tersisa, meninjau diff terhadap aturan spesifikasi (komentar blok, keyword case-insensitive, operator terpanjang, aturan CRUD subquery), lalu memverifikasi dengan menjalankan `pytest` sampai seluruh test lulus sebelum perubahan di-push ke `main`. |
+
+**Refleksi (3-5 kalimat).** Setelah TODO(T3) dan dua bug lexer dikerjakan, `pytest` masih
+menunjukkan satu kegagalan: matrix `laporan_penjualan` menghasilkan `pesanan = 'RUD'`.
+Ternyata penyebabnya bukan lexer melainkan `crud/analyzer.py` yang mewariskan op `U` dari
+`UPDATE` ke tabel di dalam subquery WHERE, padahal spesifikasi bagian 5 tegas bahwa membaca
+tabel lewat subquery selalu R. Pelajarannya: kegagalan test tidak selalu ada di tempat yang
+terlihat pertama kali — telusuri sampai aturan spesifikasi yang dilanggar, jangan berhenti di
+perbaikan pertama yang membuat sebagian test hijau.
