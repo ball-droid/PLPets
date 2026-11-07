@@ -8,12 +8,8 @@ Keluaran `python evaluate.py` terhadap `data/ground_truth.csv` (27 triple):
 Dievaluasi: audit.sql, campuran_error.sql, laporan_penjualan.sql, pemeliharaan.sql (27 triple)
 
 Metode   Precision  Recall     F1
-parser        1.00    0.93   0.96
+parser        1.00    1.00   1.00
 regex         0.65    0.81   0.72
-
-[parser]
-  terlewat (FN):       ('campuran_error.sql', 6, 'produk', 'U')
-  terlewat (FN):       ('campuran_error.sql', 8, 'keranjang', 'D')
 
 [regex]
   salah ditemukan (FP): ('audit.sql', 16, 'sesi', 'R')
@@ -35,8 +31,10 @@ regex         0.65    0.81   0.72
   terlewat (FN):       ('pemeliharaan.sql', 3, 'crm.pelanggan', 'R')
 ```
 
-Parser memiliki precision 1.00, tetapi recall belum 1.00 karena dua statement sesudah
-statement rusak di `campuran_error.sql` masih terlewat oleh error recovery (Bug 7).
+Setelah Bug 7 diperbaiki (error recovery berhenti di `;` berikutnya), parser mencapai
+precision, recall, dan F1 **1.00**: kedua statement sesudah statement rusak di
+`campuran_error.sql` (`UPDATE produk`, `DELETE keranjang`) kini ikut diproses, sehingga
+tidak ada lagi false negative pada parser.
 
 ## 2. Tiga kasus di mana regex salah
 
@@ -112,6 +110,7 @@ Siapa mengerjakan apa, dan bagaimana kalian memastikan keduanya memahami seluruh
 | TODO(T1) `INSERT ... SELECT` | Mengimplementasikan perubahan di `crud/parser.py::Parser._insert()` (memakai ulang `_select()` dan mengisi `Insert.query`), menambahkan test regresi/kasus tepi di `tests/test_tambahan.py`, serta menjalankan `pytest`. | Menentukan target TODO(T1), meninjau diff dan kesesuaiannya dengan SPESIFIKASI.md bagian 3 dan 5, menjalankan test, dan memverifikasi CRUD matrix query contoh (`arsip_pesanan` = C, `pesanan` = R). |
 | TODO(T3) dan Bug 1–3 | Membantu perubahan lexer untuk keyword case-insensitive, operator `<>`, komentar blok, serta analyzer agar subquery selalu `R`; menambahkan test regresi. | Menentukan target dan meninjau perubahan terhadap spesifikasi, lalu memverifikasi test serta CRUD matrix. |
 | Bug 6 presedensi `OR`/`AND` | Memisahkan `_logical()` menjadi `_or()` → `_and()` → `_not()` di `crud/parser.py` sesuai grammar §3.1, menambahkan test regresi `test_regresi_presedensi_or_dan_and`, dan memperbarui `LAPORAN_BUG.md` bagian Bug 6. | Menentukan target perbaikan dari temuan audit §3.1, meninjau diff terhadap grammar `or_expr`/`and_expr`, memverifikasi struktur AST dengan `pretty()` sebelum/sesudah, dan menjalankan seluruh test. |
+| Bug 7 error recovery | Mengubah `crud/parser.py::_synchronize()` agar berhenti setelah mengonsumsi `;` berikutnya, menambahkan test regresi `test_regresi_error_recovery_berhenti_di_semicolon`, dan memperbarui `LAPORAN_BUG.md` bagian Bug 7. | Meninjau aturan §6, mereproduksi `SELECT id FROM; SELECT a FROM t;` (1 error, 0 statement), memverifikasi sebelum/sesudah dengan `pytest` dan `evaluate.py` (parser F1 1.00). |
 
 ### Anggota 2 — Muhammad Fawwaz Muzakki (251524056)
 
@@ -123,5 +122,5 @@ Siapa mengerjakan apa, dan bagaimana kalian memastikan keduanya memahami seluruh
 
 Pemahaman lintas kode diperiksa dengan menelusuri alur lexer → parser/AST → resolver →
 analyzer pada contoh SQL, meninjau perubahan sesuai bagian spesifikasi, dan menjalankan
-test regresi. Seluruh test saat ini lulus; hasil evaluasi tetap mencatat dua statement
-terlewat akibat Bug 7 yang belum diperbaiki.
+test regresi. Seluruh 41 test lulus dan setelah Bug 7 diperbaiki seluruh bug pada
+laporan ini sudah tertangani; evaluasi parser mencapai F1 1.00 terhadap 27 triple.

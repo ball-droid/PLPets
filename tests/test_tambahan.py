@@ -66,6 +66,23 @@ def test_regresi_subquery_update_tidak_ditandai_u():
     assert analyze_statement(stmt) == {"produk": {"U"}, "pesanan": {"R"}}
 
 
+# ---- regresi bug 7: error recovery berhenti di ; (bagian 6) --------------
+def test_regresi_error_recovery_berhenti_di_semicolon():
+    """Sebelum perbaikan, satu error membuang seluruh sisa file (0 statement)."""
+    script = parse_sql("SELECT id FROM; SELECT a FROM t;")
+    assert len(script.errors) == 1
+    assert len(script.statements) == 1
+    stmt = script.statements[0]
+    assert isinstance(stmt, ast.Select)
+    assert stmt.sources[0].name == "t"
+
+    # Tiap statement rusak menghasilkan tepat satu error; statement valid
+    # sesudah dua statement rusak tetap harus diproses.
+    script2 = parse_sql("SELECT id FROM; SELECT id FROM; SELECT a FROM t;")
+    assert len(script2.errors) == 2
+    assert len(script2.statements) == 1
+
+
 # ---- regresi bug 6: presedensi OR/AND (bagian 3.1) -----------------------
 def test_regresi_presedensi_or_dan_and():
     """Sebelum perbaikan, a = 1 OR b = 2 AND c = 3 diparse sebagai (a OR b) AND c."""
