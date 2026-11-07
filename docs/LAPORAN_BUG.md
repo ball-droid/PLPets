@@ -154,7 +154,7 @@ TODO(T2) di commit `c5514fc`.
 
 ## Bug 5: String dengan kutip ganda `''` pecah jadi dua token
 
-**Ditemukan oleh:** Muhammad Iqbal (251524057) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama ChatGPT ASTRA · **Commit:** belum di-commit
+**Ditemukan oleh:** Muhammad Iqbal (251524057) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama ChatGPT ASTRA · **Commit:** `2c8b5a1`
 
 **Gejala.** `tokenize("'O''Brien'")` menghasilkan dua token `STRING 'O'` dan `STRING 'Brien'`.
 SPESIFIKASI.md bagian 2.4: dua kutip berturut-turut di dalam string adalah **satu** karakter
@@ -256,7 +256,7 @@ dikerjakan.
 
 ## Bug 8: `LEFT OUTER JOIN` ditolak parser
 
-**Ditemukan oleh:** Muhammad Iqbal (251524057) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama ChatGPT ASTRA · **Commit:** belum di-commit
+**Ditemukan oleh:** Muhammad Iqbal (251524057) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama ChatGPT ASTRA · **Commit:** `2c8b5a1`
 
 **Gejala.** `SELECT a.id FROM a LEFT OUTER JOIN b ON b.a_id = a.id;` menghasilkan
 `ParseError: Baris 1, kolom 25: diharapkan JOIN, ditemukan 'OUTER'`. Grammar §3:
@@ -292,7 +292,7 @@ diverifikasi dengan parser dan test suite.
 
 ## Bug 9: Pencarian qualifier resolver terbalik — shadowing alias mati
 
-**Ditemukan oleh:** Muhammad Fawwaz Muzakki (251524056) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama AI · **Commit:** belum di-commit
+**Ditemukan oleh:** Muhammad Fawwaz Muzakki (251524056) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama AI · **Commit:** `2c8b5a1`
 
 **Gejala.** Untuk `SELECT p.id FROM pelanggan p WHERE p.id IN (SELECT p.pelanggan_id FROM
 pesanan p)`, kolom `p.pelanggan_id` di dalam subquery di-resolve ke `pelanggan` (scope luar).
