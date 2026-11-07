@@ -5,8 +5,7 @@ Laporan ini memuat seluruh **9 bug** pada codebase. Bug 1–3, 6, dan 7 dikerjak
 **Muhammad Fawwaz Muzakki**. Bug 5 dan 8 ditemukan oleh **Muhammad Iqbal (251524057)**
 dan diperbaiki oleh **Muhammad Fawwaz Muzakki (251524056)** bersama ChatGPT ASTRA;
 bug 9 ditemukan dan diperbaiki oleh **Muhammad Fawwaz Muzakki** bersama AI. Seluruh bug
-sudah diperbaiki. Bagian **Akar masalah** masih berupa draf AI; wajib
-disunting dengan kata-kata sendiri sebelum demo (bagian ini diuji lisan).
+sudah diperbaiki.
 
 ---
 
@@ -343,11 +342,13 @@ dari scope aktif ke `parent`, sehingga alias di scope terdalam menang dan alias 
 bisa ditemukan untuk correlated subquery. Sebelumnya fungsi mengumpulkan scope lalu
 mengiterasikannya dengan `reversed`, sehingga scope terluar menang.
 
-**Test regresi.** `tests/test_resolver.py::test_alias_dalam_scope_terdalam_menutupi_alias_luar`
-memastikan alias `p` di subquery di-resolve ke `pesanan`, sedangkan alias `p` di query luar
-tetap di-resolve ke `pelanggan`.
-`tests/test_resolver.py::test_subquery_tetap_dapat_merujuk_alias_luar` memastikan pencarian
-ke scope induk untuk correlated subquery tetap berfungsi.
+**Test regresi.** `tests/test_tambahan.py::test_regresi_bug9_alias_subquery_menutupi_alias_luar`
+— kolom `p.pelanggan_id` di subquery wajib di-resolve ke `pesanan`; terbukti gagal (hasil
+`pelanggan`) bila `_lookup()` dikembalikan ke versi `reversed`, lulus setelah perbaikan.
+Didukung `tests/test_resolver.py::test_alias_dalam_scope_terdalam_menutupi_alias_luar`
+(alias `p` di query luar tetap `pelanggan`) dan
+`tests/test_resolver.py::test_subquery_tetap_dapat_merujuk_alias_luar` (pencarian ke scope
+induk untuk correlated subquery tetap berfungsi).
 
 **Peran AI.** AI membantu Muhammad Fawwaz Muzakki memeriksa aturan §4.3, mengonfirmasi
 gejala melalui reproduksi, mengubah `_lookup()` agar mencari dari scope terdalam ke luar,

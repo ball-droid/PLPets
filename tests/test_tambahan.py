@@ -1,10 +1,6 @@
-"""Test tambahan buatan kelompok.
-
-Isi dengan:
-1. Satu test regresi untuk setiap bug yang kalian perbaiki (gagal sebelum perbaikan,
-   lulus sesudahnya). Beri nama yang menjelaskan bug-nya.
-2. Lima test kasus tepi, masing-masing dengan komentar singkat mengapa kasus itu berisiko.
-"""
+"""Test tambahan buatan kelompok: test regresi untuk tiap bug yang diperbaiki
+(semuanya gagal pada kode lama dan lulus setelah perbaikan) plus lima test kasus
+tepi yang berisiko salah parser/resolver."""
 import pytest  # noqa: F401  (dipakai saat test kasus tepi ditambahkan)
 
 from crud import ast_nodes as ast
@@ -135,6 +131,19 @@ def test_regresi_left_outer_join():
     invalid = parse_sql("SELECT a.id FROM a INNER OUTER JOIN b ON b.a_id = a.id")
     assert invalid.statements == []
     assert len(invalid.errors) == 1
+
+
+# ---- regresi bug 9: pencarian qualifier dari scope terdalam (bagian 4.3) ---
+def test_regresi_bug9_alias_subquery_menutupi_alias_luar():
+    """Sebelum perbaikan, `p` di subquery salah resolve ke `pelanggan` (scope luar menang)."""
+    script = parse_sql(
+        "SELECT p.id FROM pelanggan p WHERE p.id IN (SELECT p.pelanggan_id FROM pesanan p)")
+    assert script.errors == []
+    Resolver().resolve_script(script)
+    cols = [c for c in ast.iter_nodes(script) if isinstance(c, ast.ColumnRef)]
+    inner = [c for c in cols if c.name == "pelanggan_id"][0]
+    # Shadowing: qualifier p di scope terdalam harus menemukan pesanan lebih dulu.
+    assert inner.resolved == "pesanan"
 
 
 # ---- kasus tepi -----------------------------------------------------------

@@ -38,8 +38,8 @@ tidak ada lagi false negative pada parser.
 
 ## 2. Tiga kasus di mana regex salah
 
-Untuk tiap kasus: SQL-nya, kesalahan regex, dan mengapa parser benar (kaitkan dengan konsep
-lexing, parsing, atau resolusi).
+Tiga contoh di mana baseline regex memberi hasil salah, beserta penjelasan mengapa parser
+benar dengan merujuk konsep lexing, parsing, atau resolusi:
 
 1. **Daftar tabel dipisahkan koma — tabel kedua terlewat.**
 
@@ -75,9 +75,9 @@ lexing, parsing, atau resolusi).
 
 ## 3. Batas pendekatan kami
 
-Minimal tiga hal yang **tidak bisa** ditangani dengan benar oleh tool ini meskipun semua bug
-sudah diperbaiki. Untuk tiap batas: contoh SQL atau situasinya, akibatnya pada CRUD matrix,
-dan informasi apa yang dibutuhkan untuk mengatasinya.
+Tiga hal yang tetap tidak bisa ditangani dengan benar oleh tool ini meskipun seluruh bug
+sudah diperbaiki, beserta contoh SQL, akibatnya pada CRUD matrix, dan informasi yang
+dibutuhkan untuk mengatasinya:
 
 1. **Tidak ada katalog skema atau metadata kolom.** Contoh: `SELECT id FROM pelanggan p
    JOIN pesanan o ON o.pelanggan_id = p.id;`. CRUD matrix tingkat tabel masih dapat
@@ -101,7 +101,7 @@ dan informasi apa yang dibutuhkan untuk mengatasinya.
 
 ## 4. Pembagian kerja
 
-Siapa mengerjakan apa, dan bagaimana kalian memastikan keduanya memahami seluruh kode.
+Pembagian tugas kedua anggota beserta cara kami memastikan keduanya memahami seluruh kode:
 
 ### Anggota 1 — Muhammad Iqbal (251524057)
 
@@ -122,5 +122,5 @@ Siapa mengerjakan apa, dan bagaimana kalian memastikan keduanya memahami seluruh
 
 Pemahaman lintas kode diperiksa dengan menelusuri alur lexer → parser/AST → resolver →
 analyzer pada contoh SQL, meninjau perubahan sesuai bagian spesifikasi, dan menjalankan
-test regresi. Seluruh 46 test lulus dan setelah Bug 7 diperbaiki seluruh bug pada
+test regresi. Seluruh 47 test lulus dan setelah Bug 7 diperbaiki seluruh bug pada
 laporan ini sudah tertangani; evaluasi parser mencapai F1 1.00 terhadap 27 triple.
