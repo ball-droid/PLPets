@@ -69,4 +69,4 @@ Verifikasi: `py -m pytest tests/test_tambahan.py tests/test_lexer.py tests/test_
 | Muhammad Iqbal (251524057) | Menemukan Bug 6 saat audit §3.1, memastikan gejala dengan `pretty()` (`a = 1 OR b = 2 AND c = 3` berakar `AND`), meninjau perubahan parser terhadap grammar `or_expr`/`and_expr`, lalu menjalankan seluruh test sebelum dikerjakan. |
 | AI (MiMoCode) | Menunjuk `crud/parser.py::_logical()` sebagai akar masalah (satu loop untuk `AND` dan `OR`), mengubahnya menjadi `_or()` → `_and()` → `_not()` sesuai urutan grammar §3.1, menambahkan test regresi `test_regresi_presedensi_or_dan_and` di `tests/test_tambahan.py`, dan memperbarui `docs/LAPORAN_BUG.md` bagian Bug 6. |
 
-Verifikasi: `python -m pytest -q` → **40 passed, 0 failed**. Test regresi terbukti gagal saat perbaikan parser di-stash (akar `AND`) dan lulus setelah perbaikan (akar `OR`, anak kanan `AND`). Belum di-commit/di-push sesuai instruksi.
+Verifikasi: `python -m pytest -q` → **40 passed, 0 failed**. Test regresi terbukti gagal saat perbaikan parser di-stash (akar `AND`) dan lulus setelah perbaikan (akar `OR`, anak kanan `AND`). Perbaikan Bug 6 di-commit sebagai `4f7ae06` dan sudah di-push ke `main`.
