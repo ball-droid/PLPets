@@ -146,7 +146,10 @@ sehingga kemandirian statement (§4.5) dilanggar.
 `self._expr(dele.where)`. Dikerjakan Muhammad Fawwaz Muzakki bersamaan dengan pengerjaan
 TODO(T2) di commit `c5514fc`.
 
-**Test regresi.** Dicatat oleh yang mengerjakan (belum ada di `tests/test_tambahan.py`).
+**Test regresi.** `tests/test_tambahan.py::test_regresi_scope_delete_tidak_bocor` — dua
+statement (`DELETE` lalu `SELECT` yang merujuk nama statement pertama); gagal bila `_pop()`
+di `_delete()` dihilangkan (statement kedua tidak error), lulus sesudahnya: `sesi`
+dilaporkan tidak terdefinisi di statement berikutnya.
 
 **Peran AI.** Dicatat oleh yang mengerjakan (Muhammad Fawwaz Muzakki).
 

@@ -9,8 +9,9 @@ import pytest  # noqa: F401  (dipakai saat test kasus tepi ditambahkan)
 
 from crud import ast_nodes as ast
 from crud.analyzer import analyze_statement
-from crud.lexer import TokenType, tokenize
+from crud.lexer import LexError, TokenType, tokenize
 from crud.parser import parse_sql
+from crud.resolver import Resolver
 
 
 def _one(sql):
@@ -98,6 +99,19 @@ def test_regresi_presedensi_or_dan_and():
     assert where.right.right.left.name == "c"
 
 
+# ---- regresi bug 4: scope DELETE ditutup (bagian 4.5) --------------------
+def test_regresi_scope_delete_tidak_bocor():
+    """Sebelum perbaikan, alias statement DELETE masih terbaca statement berikutnya (tanpa error)."""
+    script = parse_sql(
+        "DELETE FROM sesi WHERE dibuat = 1; SELECT id FROM t WHERE sesi.id = 2;")
+    assert script.errors == []
+    diags = Resolver().resolve_script(script)
+    errors = [d for d in diags if d.level == "error"]
+    # 'sesi' hanya milik scope DELETE yang sudah selesai — statement kedua wajib error.
+    assert len(errors) == 1
+    assert "'sesi'" in errors[0].message
+
+
 # ---- regresi bug 5: kutip tunggal berulang dalam string (bagian 2.4) ----
 def test_regresi_kutip_ganda_dalam_string():
     """Risiko: quote berpasangan di isi string bisa disangka akhir token."""
@@ -121,3 +135,31 @@ def test_regresi_left_outer_join():
     invalid = parse_sql("SELECT a.id FROM a INNER OUTER JOIN b ON b.a_id = a.id")
     assert invalid.statements == []
     assert len(invalid.errors) == 1
+
+
+# ---- kasus tepi -----------------------------------------------------------
+def test_kasus_tepi_komentar_blok_tidak_ditutup():
+    """Risiko: blok /* tanpa */ bisa menelan seluruh sisi file diam-diam; §2.3 mewajibkan LexError."""
+    with pytest.raises(LexError):
+        tokenize("SELECT /* komentar belum ditutup\nFROM t")
+
+
+def test_kasus_tepi_string_tidak_ditutup():
+    """Risiko: kutip pembuka tanpa penutup membuat lexer menelan token sesudahnya tanpa error."""
+    with pytest.raises(LexError):
+        tokenize("INSERT INTO t VALUES ('abc")
+
+
+def test_kasus_tepi_statement_terakhir_tanpa_semicolon():
+    """Risiko: grammar script = statement ( ';' | EOF ) — statement terakhir tanpa ; sering salah ditolak."""
+    script = parse_sql("SELECT a FROM t")
+    assert script.errors == []
+    assert len(script.statements) == 1
+
+
+def test_kasus_tepi_between_dihuni_or():
+    """Risiko: AND internal BETWEEN bisa tertangkap loop AND luar sehingga presedensi salah."""
+    stmt = _one("SELECT a FROM t WHERE x BETWEEN 1 AND 2 OR y = 3")
+    where = stmt.where
+    assert isinstance(where, ast.BinaryOp) and where.op == "OR"
+    assert isinstance(where.left, ast.Between)

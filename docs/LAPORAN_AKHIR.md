@@ -122,5 +122,5 @@ Siapa mengerjakan apa, dan bagaimana kalian memastikan keduanya memahami seluruh
 
 Pemahaman lintas kode diperiksa dengan menelusuri alur lexer → parser/AST → resolver →
 analyzer pada contoh SQL, meninjau perubahan sesuai bagian spesifikasi, dan menjalankan
-test regresi. Seluruh 41 test lulus dan setelah Bug 7 diperbaiki seluruh bug pada
+test regresi. Seluruh 46 test lulus dan setelah Bug 7 diperbaiki seluruh bug pada
 laporan ini sudah tertangani; evaluasi parser mencapai F1 1.00 terhadap 27 triple.
