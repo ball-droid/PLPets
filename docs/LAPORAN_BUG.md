@@ -1,10 +1,10 @@
 # Laporan Bug
 
-Laporan ini memuat seluruh **9 bug** pada codebase. Bug 1–3 serta draf akar masalah bug 6–7
-dikerjakan **Muhammad Iqbal (251524057)** bersama AI MiMoCode; **bug 4** dikerjakan
-**Muhammad Fawwaz Muzakki**. Bug 5 dan 8 ditemukan oleh **Muhammad Iqbal (251524057)**
+Laporan ini memuat seluruh **9 bug** pada codebase. Bug 1–3 serta **bug 6** dikerjakan
+**Muhammad Iqbal (251524057)** bersama AI MiMoCode; draf akar masalah bug 7 juga disusun
+olehnya bersama AI; **bug 4** dikerjakan **Muhammad Fawwaz Muzakki**. Bug 5 dan 8 ditemukan oleh **Muhammad Iqbal (251524057)**
 dan diperbaiki oleh **Muhammad Fawwaz Muzakki (251524056)** bersama ChatGPT ASTRA;
-bug 9 ditemukan dan diperbaiki oleh **Muhammad Fawwaz Muzakki** bersama AI. Bug yang belum diperbaiki diberi keterangan
+bug 9 ditemukan dan diperbaiki oleh **Muhammad Fawwaz Muzakki** bersama AI. Bug yang belum diperbaiki (bug 7) diberi keterangan
 *"belum dikerjakan & belum di-fix"*. Bagian **Akar masalah** masih berupa draf AI; wajib
 disunting dengan kata-kata sendiri sebelum demo (bagian ini diuji lisan).
 
@@ -189,7 +189,7 @@ Iqbal; hasilnya diverifikasi dengan lexer dan parser.
 
 ## Bug 6: Presedensi `OR`/`AND` terbalik
 
-**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** belum dikerjakan & belum di-fix (masih terbuka)
+**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** Muhammad Iqbal (251524057) · **Commit:** belum di-commit
 
 **Gejala.** Untuk `a = 1 OR b = 2 AND c = 3`, akar AST adalah `AND` dengan anak `OR`, artinya
 di-parse sebagai `(a OR b) AND c`. SPESIFIKASI.md bagian 3.1 (dengan contoh eksplisit di
@@ -209,13 +209,22 @@ Interpreters bab 6, tiap tingkat presedensi membutuhkan level pemanggilan sendir
 datar tanpa pemisahan tingkat; itulah kenapa operand `AND` "terseret" masuk ke dalam `OR`
 terlebih dulu.
 
-**Perbaikan.** Belum. Rencana: pisah menjadi `_or()` → `_and()` → `_not()` sesuai urutan
-grammar, masing-masing berloop asosiatif kiri.
+**Perbaikan.** `crud/parser.py::_logical()`: dipisah menjadi dua fungsi berloop asosiatif
+kiri — `_or()` memanggil `_and()` sebagai operandnya, dan `_and()` memanggil `_not()`
+— persis urutan produksi `or_expr = and_expr { "OR" and_expr }` dan
+`and_expr = not_expr { "AND" not_expr }` di §3.1. Alternatif yang dipertimbangkan:
+memakai tabel bobot presedensi dalam satu loop — ditolak karena struktur parser sudah
+recursive descent per nonterminal, dan tabel bobot hanya menambah data paralel dengan
+grammar tanpa keuntungan.
 
-**Test regresi.** Belum — akan ditambahkan bersama perbaikan.
+**Test regresi.** `tests/test_tambahan.py::test_regresi_presedensi_or_dan_and` — gagal
+sebelum perbaikan (akar `AND`), lulus sesudahnya: akar `OR`, anak kanan `AND` dengan
+operand `b = 2` dan `c = 3`.
 
 **Peran AI.** MiMoCode menemukan bug ini saat audit §3.1 dan memverifikasi struktur AST
-dengan `pretty()`; perbaikan belum dikerjakan.
+dengan `pretty()`; perbaikannya (pemisahan `_or()`/`_and()`) ditulis bersama MiMoCode.
+Verifikasi: `pytest` sampai hijau penuh, membandingkan AST sebelum/sesudah dengan
+`pretty()`, dan memastikan test regresi gagal saat perbaikan di-stash.
 
 ---
 

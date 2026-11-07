@@ -10,6 +10,7 @@ Catat setiap penggunaan AI atau coding agent yang memengaruhi kode atau laporan.
 | 4 | Muhammad Fawwaz Muzakki (251524056) | Meminta AI memeriksa bug pada `crud/resolver.py` dan mencatat temuan resolver terkait pencarian qualifier di scope bertingkat | Diterima | Bug ditemukan oleh Muhammad Fawwaz Muzakki; AI membantu menelusuri `_lookup()` dan mendokumentasikan temuan tanpa mengubah kode resolver pada tahap ini atau menimpa catatan anggota lain. | Menjalankan query reproduksi shadowing: kolom `p` pada subquery salah ter-resolve ke `pelanggan`, seharusnya `pesanan`; `py -m pytest tests/test_resolver.py -q` → 4 passed. |
 | 5 | Muhammad Fawwaz Muzakki (251524056) | Meminta ChatGPT ASTRA memperbaiki bug pencarian qualifier di scope bertingkat pada `crud/resolver.py` (Bug 9). | Diterima | `_lookup()` sekarang mencari dari scope aktif ke scope induk; alias dalam subquery menutupi alias luar, sementara correlated subquery tetap dapat menemukan alias induk. | `py -m pytest -q` → 37 passed; ditambahkan test shadowing dan test correlated subquery di `tests/test_resolver.py`. |
 | 6 | Muhammad Iqbal (251524057) — penemu; Muhammad Fawwaz Muzakki (251524056) — perbaikan | Memperbaiki Bug 5 (string dengan kutip `''`) dan Bug 8 (`LEFT OUTER JOIN`) dengan bantuan ChatGPT ASTRA. | Diterima | Lexer kini mengubah kutip tunggal berpasangan di dalam string menjadi satu karakter kutip; parser menerima `OUTER` opsional setelah `LEFT` sesuai grammar. | `py -m pytest tests/test_tambahan.py tests/test_lexer.py tests/test_parser.py -q` → 28 passed; kedua SQL reproduksi berhasil diparse dan `INNER OUTER JOIN` tetap ditolak. |
+| 7 | Muhammad Iqbal (251524057) — anggota 1 | Memperbaiki Bug 6 (presedensi `OR`/`AND` terbalik, SPESIFIKASI.md §3.1) bersama AI (MiMoCode): memisahkan `_logical()` yang berloop tunggal menjadi `_or()` → `_and()` → `_not()` sesuai urutan grammar | Diterima | Sebelumnya `OR` dan `AND` diparse pada tingkat presedensi sama sehingga `a = 1 OR b = 2 AND c = 3` menjadi `(a OR b) AND c`; dengan pemisahan per nonterminal, `AND` mengikat lebih kuat dan hasilnya `a = 1 OR (b = 2 AND c = 3)` sesuai contoh eksplisit §3.1. | `python -m pytest -q` → **40 passed, 0 failed** (sebelumnya 39 passed; +1 test regresi `test_regresi_presedensi_or_dan_and` yang terbukti gagal saat perbaikan di-stash); AST dicek ulang dengan `ast_nodes.pretty()` — kini berakar `OR` dengan anak kanan `AND` |
 
 ## Rincian pengerjaan TODO(T1) — `INSERT ... SELECT`
 
@@ -60,3 +61,12 @@ perbaikan pertama yang membuat sebagian test hijau.
 | ChatGPT ASTRA | Membantu mengubah `crud/lexer.py::Lexer._string()` agar `''` di dalam string menjadi satu kutip literal, serta `crud/parser.py::Parser._join()` agar `OUTER` opsional diterima setelah `LEFT`. Menambahkan test di `tests/test_tambahan.py`. |
 
 Verifikasi: `py -m pytest tests/test_tambahan.py tests/test_lexer.py tests/test_parser.py -q` → **28 passed**. SQL `INSERT INTO t (nama) VALUES ('O''Brien')` menghasilkan satu nilai string `O'Brien`; `LEFT OUTER JOIN` berhasil diparse, sedangkan `INNER OUTER JOIN` tetap menghasilkan error.
+
+## Rincian perbaikan Bug 6
+
+| Pihak | Yang dikerjakan |
+| --- | --- |
+| Muhammad Iqbal (251524057) | Menemukan Bug 6 saat audit §3.1, memastikan gejala dengan `pretty()` (`a = 1 OR b = 2 AND c = 3` berakar `AND`), meninjau perubahan parser terhadap grammar `or_expr`/`and_expr`, lalu menjalankan seluruh test sebelum dikerjakan. |
+| AI (MiMoCode) | Menunjuk `crud/parser.py::_logical()` sebagai akar masalah (satu loop untuk `AND` dan `OR`), mengubahnya menjadi `_or()` → `_and()` → `_not()` sesuai urutan grammar §3.1, menambahkan test regresi `test_regresi_presedensi_or_dan_and` di `tests/test_tambahan.py`, dan memperbarui `docs/LAPORAN_BUG.md` bagian Bug 6. |
+
+Verifikasi: `python -m pytest -q` → **40 passed, 0 failed**. Test regresi terbukti gagal saat perbaikan parser di-stash (akar `AND`) dan lulus setelah perbaikan (akar `OR`, anak kanan `AND`). Belum di-commit/di-push sesuai instruksi.

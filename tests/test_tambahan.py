@@ -66,6 +66,21 @@ def test_regresi_subquery_update_tidak_ditandai_u():
     assert analyze_statement(stmt) == {"produk": {"U"}, "pesanan": {"R"}}
 
 
+# ---- regresi bug 6: presedensi OR/AND (bagian 3.1) -----------------------
+def test_regresi_presedensi_or_dan_and():
+    """Sebelum perbaikan, a = 1 OR b = 2 AND c = 3 diparse sebagai (a OR b) AND c."""
+    stmt = _one("SELECT id FROM t WHERE a = 1 OR b = 2 AND c = 3")
+    where = stmt.where
+
+    # Harusnya a = 1 OR (b = 2 AND c = 3): akar OR, anak kanan AND.
+    assert isinstance(where, ast.BinaryOp) and where.op == "OR"
+    assert isinstance(where.left, ast.BinaryOp) and where.left.op == "="
+    assert where.left.left.name == "a"
+    assert isinstance(where.right, ast.BinaryOp) and where.right.op == "AND"
+    assert where.right.left.left.name == "b"
+    assert where.right.right.left.name == "c"
+
+
 # ---- regresi bug 5: kutip tunggal berulang dalam string (bagian 2.4) ----
 def test_regresi_kutip_ganda_dalam_string():
     """Risiko: quote berpasangan di isi string bisa disangka akhir token."""
