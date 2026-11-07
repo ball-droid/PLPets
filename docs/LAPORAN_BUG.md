@@ -189,7 +189,7 @@ Iqbal; hasilnya diverifikasi dengan lexer dan parser.
 
 ## Bug 6: Presedensi `OR`/`AND` terbalik
 
-**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** Muhammad Iqbal (251524057) · **Commit:** belum di-commit
+**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** Muhammad Iqbal (251524057) · **Commit:** `4f7ae06`
 
 **Gejala.** Untuk `a = 1 OR b = 2 AND c = 3`, akar AST adalah `AND` dengan anak `OR`, artinya
 di-parse sebagai `(a OR b) AND c`. SPESIFIKASI.md bagian 3.1 (dengan contoh eksplisit di

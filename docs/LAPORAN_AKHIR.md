@@ -111,6 +111,7 @@ Siapa mengerjakan apa, dan bagaimana kalian memastikan keduanya memahami seluruh
 | --- | --- | --- |
 | TODO(T1) `INSERT ... SELECT` | Mengimplementasikan perubahan di `crud/parser.py::Parser._insert()` (memakai ulang `_select()` dan mengisi `Insert.query`), menambahkan test regresi/kasus tepi di `tests/test_tambahan.py`, serta menjalankan `pytest`. | Menentukan target TODO(T1), meninjau diff dan kesesuaiannya dengan SPESIFIKASI.md bagian 3 dan 5, menjalankan test, dan memverifikasi CRUD matrix query contoh (`arsip_pesanan` = C, `pesanan` = R). |
 | TODO(T3) dan Bug 1–3 | Membantu perubahan lexer untuk keyword case-insensitive, operator `<>`, komentar blok, serta analyzer agar subquery selalu `R`; menambahkan test regresi. | Menentukan target dan meninjau perubahan terhadap spesifikasi, lalu memverifikasi test serta CRUD matrix. |
+| Bug 6 presedensi `OR`/`AND` | Memisahkan `_logical()` menjadi `_or()` → `_and()` → `_not()` di `crud/parser.py` sesuai grammar §3.1, menambahkan test regresi `test_regresi_presedensi_or_dan_and`, dan memperbarui `LAPORAN_BUG.md` bagian Bug 6. | Menentukan target perbaikan dari temuan audit §3.1, meninjau diff terhadap grammar `or_expr`/`and_expr`, memverifikasi struktur AST dengan `pretty()` sebelum/sesudah, dan menjalankan seluruh test. |
 
 ### Anggota 2 — Muhammad Fawwaz Muzakki (251524056)
 
