@@ -1,11 +1,11 @@
 # Laporan Bug
 
-Laporan ini memuat seluruh **9 bug** pada codebase. Bug 1–3 serta **bug 6** dikerjakan
-**Muhammad Iqbal (251524057)** bersama AI MiMoCode; draf akar masalah bug 7 juga disusun
-olehnya bersama AI; **bug 4** dikerjakan **Muhammad Fawwaz Muzakki**. Bug 5 dan 8 ditemukan oleh **Muhammad Iqbal (251524057)**
+Laporan ini memuat seluruh **9 bug** pada codebase. Bug 1–3, 6, dan 7 dikerjakan
+**Muhammad Iqbal (251524057)** bersama AI MiMoCode; **bug 4** dikerjakan
+**Muhammad Fawwaz Muzakki**. Bug 5 dan 8 ditemukan oleh **Muhammad Iqbal (251524057)**
 dan diperbaiki oleh **Muhammad Fawwaz Muzakki (251524056)** bersama ChatGPT ASTRA;
-bug 9 ditemukan dan diperbaiki oleh **Muhammad Fawwaz Muzakki** bersama AI. Bug yang belum diperbaiki (bug 7) diberi keterangan
-*"belum dikerjakan & belum di-fix"*. Bagian **Akar masalah** masih berupa draf AI; wajib
+bug 9 ditemukan dan diperbaiki oleh **Muhammad Fawwaz Muzakki** bersama AI. Seluruh bug
+sudah diperbaiki. Bagian **Akar masalah** masih berupa draf AI; wajib
 disunting dengan kata-kata sendiri sebelum demo (bagian ini diuji lisan).
 
 ---
@@ -230,7 +230,7 @@ Verifikasi: `pytest` sampai hijau penuh, membandingkan AST sebelum/sesudah denga
 
 ## Bug 7: Error recovery membuang seluruh sisa file, bukan sampai `;`
 
-**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** belum dikerjakan & belum di-fix (masih terbuka)
+**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** Muhammad Iqbal (251524057) · **Commit:** `b19e31f`
 
 **Gejala.** `parse_sql("SELECT id FROM; SELECT a FROM t;")` menghasilkan 1 error dan
 **0 statement**. SPESIFIKASI.md bagian 6: setelah error, buang token sampai dan termasuk
@@ -252,14 +252,25 @@ lapis: satu error memakan semua statement sesudahnya, dan statement rusak kedua 
 diparse sehingga tidak menghasilkan error — melanggar aturan "tepat satu error per statement
 rusak". Gejala berantai ini juga membuat bug 8 terlihat seperti "file kosong total".
 
-**Perbaikan.** Belum. Rencana: loop `synchronize` berhenti setelah menemukan `SEMICOLON`
-(lalu konsumsi token `;` itu), atau berhenti di EOF memang hanya jika memang akhir file.
+**Perbaikan.** `crud/parser.py::_synchronize()`: loop panic mode kini berhenti begitu
+`_advance()` mengembalikan token `SEMICOLON` — token `;` berikutnya ikut dikonsumsi sebagai
+penanda titik aman, sehingga parsing dilanjutkan tepat setelahnya; di EOF loop berhenti
+tanpa ada token yang tersisa. Alternatif yang dipertimbangkan: memindahkan pemanggilan
+`synchronize` ke fungsi lain (misal `_statement()`) — ditolak karena pemanggilan di
+`parse_script()` sudah tepat; yang keliru hanya definisi titik amannya, bukan
+di mana dipanggil.
 
-**Test regresi.** Belum — akan ditambahkan bersama perbaikan.
+**Test regresi.** `tests/test_tambahan.py::test_regresi_error_recovery_berhenti_di_semicolon` —
+gagal sebelum perbaikan (0 statement lolos), lulus sesudahnya: 1 error dan statement
+`SELECT` kedua tetap diproses. Test juga memastikan dua statement rusak menghasilkan
+tepat dua error dan statement valid sesudahnya tetap lolos.
 
 **Peran AI.** MiMoCode menemukan bug ini dari dua arah: probe langsung dan jejak
-`ground_truth.csv` (dua baris yang menuntut statement sesudah error); perbaikan belum
-dikerjakan.
+`ground_truth.csv` (dua baris yang menuntut statement sesudah error), lalu menulis
+perbaikan `_synchronize()` beserta test regresinya. Verifikasi: `pytest` sampai hijau
+penuh, reproduksi membandingkan jumlah statement sebelum/sesudah perbaikan, dan
+`evaluate.py` yang kini menunjukkan parser P/R/F1 **1.00** (dua FN di
+`campuran_error.sql` hilang).
 
 ---
 
