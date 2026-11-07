@@ -7,6 +7,9 @@ Catat setiap penggunaan AI atau coding agent yang memengaruhi kode atau laporan.
 | 1 | Muhammad Iqbal (251524057) — anggota 1 | Minta bantuan AI (MiMoCode) mengerjakan TODO(T1): dukung `INSERT INTO ... SELECT ...` sesuai SPESIFIKASI.md bagian 3 dan 5 | Diterima | Perubahan kecil dan terarah: `_insert()` memakai ulang `_select()` yang sudah ada, lalu mengisi `ast.Insert.query`; `values` tetap kosong. API publik dan aturan arsitektur tidak berubah. | `pytest -q` → 28 passed (sebelumnya 25 passed, 5 failed); AST `INSERT ... SELECT` dicek dengan `ast_nodes.pretty()`; `analyze_source()` menghasilkan `{'arsip_pesanan': 'C', 'pesanan': 'R'}` |
 | 2 | Muhammad Iqbal (251524057) — anggota 1 | Verifikasi status TODO(T1) bersama AI (MiMoCode): memastikan implementasi `INSERT ... SELECT` di `crud/parser.py` sudah selesai, menjalankan ulang test, memperbarui catatan log ini, lalu push ke branch `Muhammad-Iqbal` dan merge ke `main` | Diterima | Implementasi T1 sudah ada dan test khusus T1 lulus; sisa kegagalan test berasal dari bug lexer yang belum dikerjakan (T3), bukan dari T1. | `pytest -q` → 29 passed, 3 failed (semua gagal di lexer: `test_keyword_huruf_kecil`, `test_komentar_blok`, `test_matrix_laporan_penjualan`); `pytest tests/test_tambahan.py` → 2 passed |
 | 3 | Muhammad Iqbal (251524057) — anggota 1 | Bersama AI (MiMoCode): menyelesaikan TODO(T3) sekaligus **memperbaiki 3 bug** — (1) keyword tidak peka huruf besar/kecil (SPESIFIKASI.md §2.2), (2) operator `<>` terpecah jadi dua token (§2.5), (3) tabel dalam subquery `UPDATE`/`DELETE` salah ditandai `U`, harusnya selalu `R` (§5); ditambah `/* ... */` komentar blok (§2.3) | Diterima | Keempat perbaikan persis mengikuti spesifikasi: keyword dinormalkan ke huruf besar lewat `text.upper()`, `<>` di-lex dengan maximal munch, subquery selalu dipanggil dengan op `R`, komentar blok dikonsumsi sampai `*/`. Lalu ditambahkan 3 test regresi untuk bug 1–3 di `tests/test_tambahan.py`. | `pytest -q` → **35 passed, 0 failed** (sebelumnya 29 passed, 3 failed; +3 test regresi baru: `test_regresi_keyword_huruf_kecil`, `test_regresi_operator_tidak_sama_dengan`, `test_regresi_subquery_update_tidak_ditandai_u`); matrix `laporan_penjualan.sql` kini `{'arsip_pesanan': 'C', 'pelanggan': 'RU', 'pesanan': 'RD'}` |
+| 4 | Muhammad Fawwaz Muzakki (251524056) | Meminta AI memeriksa bug pada `crud/resolver.py` dan mencatat temuan resolver terkait pencarian qualifier di scope bertingkat | Diterima | Bug ditemukan oleh Muhammad Fawwaz Muzakki; AI membantu menelusuri `_lookup()` dan mendokumentasikan temuan tanpa mengubah kode resolver pada tahap ini atau menimpa catatan anggota lain. | Menjalankan query reproduksi shadowing: kolom `p` pada subquery salah ter-resolve ke `pelanggan`, seharusnya `pesanan`; `py -m pytest tests/test_resolver.py -q` → 4 passed. |
+| 5 | Muhammad Fawwaz Muzakki (251524056) | Meminta ChatGPT ASTRA memperbaiki bug pencarian qualifier di scope bertingkat pada `crud/resolver.py` (Bug 9). | Diterima | `_lookup()` sekarang mencari dari scope aktif ke scope induk; alias dalam subquery menutupi alias luar, sementara correlated subquery tetap dapat menemukan alias induk. | `py -m pytest -q` → 37 passed; ditambahkan test shadowing dan test correlated subquery di `tests/test_resolver.py`. |
+| 6 | Muhammad Iqbal (251524057) — penemu; Muhammad Fawwaz Muzakki (251524056) — perbaikan | Memperbaiki Bug 5 (string dengan kutip `''`) dan Bug 8 (`LEFT OUTER JOIN`) dengan bantuan ChatGPT ASTRA. | Diterima | Lexer kini mengubah kutip tunggal berpasangan di dalam string menjadi satu karakter kutip; parser menerima `OUTER` opsional setelah `LEFT` sesuai grammar. | `py -m pytest tests/test_tambahan.py tests/test_lexer.py tests/test_parser.py -q` → 28 passed; kedua SQL reproduksi berhasil diparse dan `INNER OUTER JOIN` tetap ditolak. |
 
 ## Rincian pengerjaan TODO(T1) — `INSERT ... SELECT`
 
@@ -24,6 +27,15 @@ penyebabnya bukan TODO(T1) melainkan bug lexer (`<>` dan keyword huruf kecil) ya
 dikerjakan. Karena itu hasil AI tidak boleh langsung dipercaya; verifikasi dilakukan dengan
 membaca spesifikasi dan menjalankan test, bukan hanya melihat kode terlihat benar.
 
+## Rincian pengerjaan TODO(T2) — resolver
+
+| Pihak | Yang dikerjakan |
+| --- | --- |
+| Muhammad Fawwaz Muzakki (251524056)| Mengimplementasikan resolusi kolom tanpa qualifier di `crud/resolver.py::Resolver._column()` sesuai SPESIFIKASI.md bagian 4.3: bila scope terdalam berisi tepat satu tabel, `ColumnRef.resolved` diisi dengan tabel tersebut; bila berisi lebih dari satu tabel, resolver memberi warning bahwa kolom ambigu; bila tidak ada tabel, resolver memberi warning bahwa kolom tidak dapat di-resolve. Pada `_delete()`, menambahkan `_pop()` setelah kondisi `WHERE` di-resolve agar scope `DELETE` ditutup dan alias tidak bocor ke statement berikutnya sesuai bagian 4.5. |
+| ChatGPT ASTRA | Membantu memeriksa bug pencarian qualifier bertingkat (Bug 9), mereproduksi kasus shadowing, lalu mengubah `crud/resolver.py::Resolver._lookup()` agar mencari mulai dari scope aktif ke `parent`. Menambahkan test shadowing dan correlated subquery di `tests/test_resolver.py`, serta memperbarui laporan bug. |
+
+Verifikasi: implementasi TODO(T2) diperiksa dengan `tests/test_resolver.py::test_kolom_tanpa_qualifier_satu_tabel`; perbaikan scope `DELETE` tercatat pada commit `c5514fc`. Perbaikan Bug 9 diverifikasi dengan `py -m pytest -q` → **37 passed**; alias terdalam menang dan correlated subquery tetap dapat merujuk alias induk.
+
 ## Rincian pengerjaan TODO(T3) — komentar blok dan perbaikan lexer
 
 | Pihak | Yang dikerjakan |
@@ -38,3 +50,13 @@ Ternyata penyebabnya bukan lexer melainkan `crud/analyzer.py` yang mewariskan op
 tabel lewat subquery selalu R. Pelajarannya: kegagalan test tidak selalu ada di tempat yang
 terlihat pertama kali — telusuri sampai aturan spesifikasi yang dilanggar, jangan berhenti di
 perbaikan pertama yang membuat sebagian test hijau.
+
+## Rincian perbaikan Bug 5 dan Bug 8
+
+| Pihak | Yang dikerjakan |
+| --- | --- |
+| Muhammad Iqbal (251524057) | Menemukan Bug 5 pada pemindaian string dengan kutip tunggal berpasangan dan Bug 8 pada parsing `LEFT OUTER JOIN`. |
+| Muhammad Fawwaz Muzakki (251524056) | Memperbaiki kedua bug dan menambahkan test regresi. |
+| ChatGPT ASTRA | Membantu mengubah `crud/lexer.py::Lexer._string()` agar `''` di dalam string menjadi satu kutip literal, serta `crud/parser.py::Parser._join()` agar `OUTER` opsional diterima setelah `LEFT`. Menambahkan test di `tests/test_tambahan.py`. |
+
+Verifikasi: `py -m pytest tests/test_tambahan.py tests/test_lexer.py tests/test_parser.py -q` → **28 passed**. SQL `INSERT INTO t (nama) VALUES ('O''Brien')` menghasilkan satu nilai string `O'Brien`; `LEFT OUTER JOIN` berhasil diparse, sedangkan `INNER OUTER JOIN` tetap menghasilkan error.

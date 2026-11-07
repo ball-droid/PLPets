@@ -40,3 +40,31 @@ def test_subquery_in_alias_dalam():
     inner = [c for c in columns(script) if c.qualifier == "o"][0]
     assert inner.resolved == "pesanan"
     assert diags == []
+
+
+def test_alias_dalam_scope_terdalam_menutupi_alias_luar():
+    script, diags = resolve(
+        "SELECT p.id FROM pelanggan p "
+        "WHERE p.id IN (SELECT p.pelanggan_id FROM pesanan p)")
+    p_columns = [c for c in columns(script) if c.qualifier == "p"]
+
+    assert [(c.name, c.resolved) for c in p_columns] == [
+        ("id", "pelanggan"),
+        ("id", "pelanggan"),
+        ("pelanggan_id", "pesanan"),
+    ]
+    assert diags == []
+
+
+def test_subquery_tetap_dapat_merujuk_alias_luar():
+    script, diags = resolve(
+        "SELECT p.id FROM pelanggan p "
+        "WHERE EXISTS (SELECT o.id FROM pesanan o WHERE o.pelanggan_id = p.id)")
+    correlated = [
+        c for c in columns(script)
+        if c.qualifier == "p" and c.name == "id"
+    ]
+
+    assert len(correlated) == 2
+    assert {c.resolved for c in correlated} == {"pelanggan"}
+    assert diags == []

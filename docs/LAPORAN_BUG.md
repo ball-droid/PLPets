@@ -1,8 +1,10 @@
 # Laporan Bug
 
-Laporan ini memuat seluruh **9 bug** pada codebase. Bug 1–3 serta draf akar masalah bug 5–9
+Laporan ini memuat seluruh **9 bug** pada codebase. Bug 1–3 serta draf akar masalah bug 6–7
 dikerjakan **Muhammad Iqbal (251524057)** bersama AI MiMoCode; **bug 4** dikerjakan
-**Muhammad Fawwaz Muzakki**. Bug yang belum diperbaiki diberi keterangan
+**Muhammad Fawwaz Muzakki**. Bug 5 dan 8 ditemukan oleh **Muhammad Iqbal (251524057)**
+dan diperbaiki oleh **Muhammad Fawwaz Muzakki (251524056)** bersama ChatGPT ASTRA;
+bug 9 ditemukan dan diperbaiki oleh **Muhammad Fawwaz Muzakki** bersama AI. Bug yang belum diperbaiki diberi keterangan
 *"belum dikerjakan & belum di-fix"*. Bagian **Akar masalah** masih berupa draf AI; wajib
 disunting dengan kata-kata sendiri sebelum demo (bagian ini diuji lisan).
 
@@ -118,7 +120,7 @@ membandingkan keluaran `analyze_statement()` dengan tabel §5.
 
 ## Bug 4: Scope `DELETE` tidak ditutup — alias bocor ke statement berikutnya
 
-**Ditemukan oleh:** Muhammad Fawwaz Muzakki · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki · **Commit:** `c5514fc`
+**Ditemukan oleh:** Muhammad Fawwaz Muzakki (251524056) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) · **Commit:** `c5514fc`
 
 **Gejala.** Pada kode awal, sesudah `DELETE FROM sesi WHERE dibuat = 1;` statement berikutnya
 `SELECT id FROM t WHERE sesi.id = 2;` **tidak menghasilkan error** — alias `sesi` masih
@@ -152,7 +154,7 @@ TODO(T2) di commit `c5514fc`.
 
 ## Bug 5: String dengan kutip ganda `''` pecah jadi dua token
 
-**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** belum dikerjakan & belum di-fix (masih terbuka)
+**Ditemukan oleh:** Muhammad Iqbal (251524057) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama ChatGPT ASTRA · **Commit:** belum di-commit
 
 **Gejala.** `tokenize("'O''Brien'")` menghasilkan dua token `STRING 'O'` dan `STRING 'Brien'`.
 SPESIFIKASI.md bagian 2.4: dua kutip berturut-turut di dalam string adalah **satu** karakter
@@ -171,13 +173,17 @@ mesin status: "di dalam string" vs "selesai". Keadaan "selesai" diambil terlalu 
 pasangan `''` tidak dibedakan dari kutip penutup tunggal, sehingga separuh string kedua
 dibaca sebagai token baru.
 
-**Perbaikan.** Belum. Rencana: setelah menemukan kutip, jika karakter berikutnya juga kutip,
-lanjutkan sebagai isi string (konsumsi keduanya); selain itu tutup string.
+**Perbaikan.** `crud/lexer.py::Lexer._string()`: ketika menemukan kutip tunggal yang diikuti
+kutip tunggal lain, lexer mengonsumsi pasangan itu dan menambahkan satu karakter kutip ke isi
+string. Kutip tunggal yang tidak berpasangan tetap menutup token string.
 
-**Test regresi.** Belum — akan ditambahkan bersama perbaikan.
+**Test regresi.** `tests/test_tambahan.py::test_regresi_kutip_ganda_dalam_string` memastikan
+`'O''Brien'` menjadi satu token bernilai `O'Brien` dan tetap berhasil diparse sebagai nilai
+`INSERT`.
 
-**Peran AI.** MiMoCode menemukan bug ini saat audit terhadap §2.4 dan membuktikannya dengan
-probe `tokenize()`; perbaikan belum dikerjakan.
+**Peran AI.** ChatGPT ASTRA membantu Muhammad Fawwaz Muzakki memperbaiki pemindaian string
+berdasarkan spesifikasi §2.4 dan menambahkan test regresi. Bug ini ditemukan oleh Muhammad
+Iqbal; hasilnya diverifikasi dengan lexer dan parser.
 
 ---
 
@@ -250,7 +256,7 @@ dikerjakan.
 
 ## Bug 8: `LEFT OUTER JOIN` ditolak parser
 
-**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** belum dikerjakan & belum di-fix (masih terbuka)
+**Ditemukan oleh:** Muhammad Iqbal (251524057) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama ChatGPT ASTRA · **Commit:** belum di-commit
 
 **Gejala.** `SELECT a.id FROM a LEFT OUTER JOIN b ON b.a_id = a.id;` menghasilkan
 `ParseError: Baris 1, kolom 25: diharapkan JOIN, ditemukan 'OUTER'`. Grammar §3:
@@ -271,19 +277,22 @@ tanda `[]`) berpadanan dengan keputusan di fungsi parser; satu bagian yang terle
 fungsi parser **menolak bahasa yang diterima grammar** — ujiannya persis: "apakah fungsi ini
 menerima semua yang diterima grammar, dan hanya itu?"
 
-**Perbaikan.** Belum. Rencana: setelah mencocokkan `LEFT`, coba `_match_kw("OUTER")` yang
-opsional sebelum `JOIN` (dan tetap menolak `OUTER` tanpa `LEFT`, serta `INNER OUTER`).
+**Perbaikan.** `crud/parser.py::Parser._join()`: setelah mencocokkan `LEFT`, parser kini
+menerima `OUTER` secara opsional sebelum `JOIN`, sesuai grammar. `INNER OUTER JOIN` tetap
+ditolak karena `OUTER` hanya opsional setelah `LEFT`.
 
-**Test regresi.** Belum — akan ditambahkan bersama perbaikan.
+**Test regresi.** `tests/test_tambahan.py::test_regresi_left_outer_join` memastikan `LEFT
+OUTER JOIN` berhasil diparse dan `INNER OUTER JOIN` tetap ditolak.
 
-**Peran AI.** MiMoCode menemukan bug ini saat audit produksi `join` terhadap grammar §3 dan
-membuktikannya dengan probe; perbaikan belum dikerjakan.
+**Peran AI.** ChatGPT ASTRA membantu Muhammad Fawwaz Muzakki memperbaiki parser mengikuti
+grammar §3 dan menambahkan test regresi. Bug ini ditemukan oleh Muhammad Iqbal; perubahan
+diverifikasi dengan parser dan test suite.
 
 ---
 
 ## Bug 9: Pencarian qualifier resolver terbalik — shadowing alias mati
 
-**Ditemukan oleh:** Muhammad Iqbal (251524057) (audit bersama MiMoCode) · **Diperbaiki oleh:** belum dikerjakan & belum di-fix (masih terbuka)
+**Ditemukan oleh:** Muhammad Fawwaz Muzakki (251524056) · **Diperbaiki oleh:** Muhammad Fawwaz Muzakki (251524056) bersama AI · **Commit:** belum di-commit
 
 **Gejala.** Untuk `SELECT p.id FROM pelanggan p WHERE p.id IN (SELECT p.pelanggan_id FROM
 pesanan p)`, kolom `p.pelanggan_id` di dalam subquery di-resolve ke `pelanggan` (scope luar).
@@ -306,10 +315,17 @@ nama outer; begitu urutan traversal dibalik, nama terluar selalu menang dan shad
 pernah terjadi (correlated subquery masih tampak benar kebetulan karena namanya tidak
 bermasalah di situ).
 
-**Perbaikan.** Belum. Rencana: iterasi `chain` tanpa `reversed` (atau bangun chain dari
-luar ke dalam lalu iterasi biasa) sehingga yang diperiksa pertama adalah scope terdalam.
+**Perbaikan.** `crud/resolver.py::Resolver._lookup()`: pencarian kini berjalan langsung
+dari scope aktif ke `parent`, sehingga alias di scope terdalam menang dan alias outer tetap
+bisa ditemukan untuk correlated subquery. Sebelumnya fungsi mengumpulkan scope lalu
+mengiterasikannya dengan `reversed`, sehingga scope terluar menang.
 
-**Test regresi.** Belum — akan ditambahkan bersama perbaikan.
+**Test regresi.** `tests/test_resolver.py::test_alias_dalam_scope_terdalam_menutupi_alias_luar`
+memastikan alias `p` di subquery di-resolve ke `pesanan`, sedangkan alias `p` di query luar
+tetap di-resolve ke `pelanggan`.
+`tests/test_resolver.py::test_subquery_tetap_dapat_merujuk_alias_luar` memastikan pencarian
+ke scope induk untuk correlated subquery tetap berfungsi.
 
-**Peran AI.** MiMoCode menemukan bug ini saat audit §4.3 dan memverifikasinya langsung
-dengan menjalankan resolver pada SQL shadowing; perbaikan belum dikerjakan.
+**Peran AI.** AI membantu Muhammad Fawwaz Muzakki memeriksa aturan §4.3, mengonfirmasi
+gejala melalui reproduksi, mengubah `_lookup()` agar mencari dari scope terdalam ke luar,
+dan menambahkan test regresi. Perbaikan diverifikasi dengan test resolver.

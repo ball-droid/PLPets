@@ -64,3 +64,28 @@ def test_regresi_subquery_update_tidak_ditandai_u():
     """Sebelum perbaikan, tabel subquery WHERE ikut tercatat U (matrix jadi RUD)."""
     stmt = _one("UPDATE produk SET stok = 1 WHERE id IN (SELECT id FROM pesanan)")
     assert analyze_statement(stmt) == {"produk": {"U"}, "pesanan": {"R"}}
+
+
+# ---- regresi bug 5: kutip tunggal berulang dalam string (bagian 2.4) ----
+def test_regresi_kutip_ganda_dalam_string():
+    """Risiko: quote berpasangan di isi string bisa disangka akhir token."""
+    tokens = tokenize("'O''Brien'")
+    assert tokens[0].type == TokenType.STRING
+    assert tokens[0].value == "O'Brien"
+    assert tokens[1].type == TokenType.EOF
+
+    stmt = _one("INSERT INTO t (nama) VALUES ('O''Brien')")
+    assert stmt.values[0][0].value == "O'Brien"
+
+
+# ---- regresi bug 8: LEFT OUTER JOIN opsional (bagian 3) -----------------
+def test_regresi_left_outer_join():
+    """Risiko: OUTER opsional hanya sah setelah LEFT, bukan setelah INNER."""
+    stmt = _one("SELECT a.id FROM a LEFT OUTER JOIN b ON b.a_id = a.id")
+    assert len(stmt.joins) == 1
+    assert stmt.joins[0].kind == "LEFT"
+    assert stmt.joins[0].source.name == "b"
+
+    invalid = parse_sql("SELECT a.id FROM a INNER OUTER JOIN b ON b.a_id = a.id")
+    assert invalid.statements == []
+    assert len(invalid.errors) == 1
